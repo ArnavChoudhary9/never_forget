@@ -32,6 +32,12 @@ class _IdeasState extends State<Ideas> {
     });
   }
 
+  void deleteCompletedIdeas() {
+    setState(() {
+      items.removeWhere((item) => item.isCompleted);
+    });
+  }
+
   void showAddTaskDialog() {
     final TextEditingController controller = TextEditingController();
 
@@ -68,6 +74,9 @@ class _IdeasState extends State<Ideas> {
 
   @override
   Widget build(BuildContext context) {
+    final pendingTasks = items.where((item) => !item.isCompleted).toList();
+    final completedTasks = items.where((item) => item.isCompleted).toList();
+
     return Scaffold(
       body: Padding(
         padding: EdgeInsets.all(16.0),
@@ -75,25 +84,73 @@ class _IdeasState extends State<Ideas> {
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'To-Do',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const Divider(),
-            Expanded(
-              child: ListView.builder(
-                itemCount: items.length,
-                itemBuilder: (context, index) {
-                  return CheckboxListTile(
-                    title: Text(items[index].title),
-                    value: items[index].isCompleted,
-                    onChanged: (bool? value) {
-                      toggleCheckbox(value, index);
-                    },
-                  );
-                },
+            if (pendingTasks.isNotEmpty) ...[
+              const Text(
+                'To-Do',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
-            ),
+              const Divider(),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: pendingTasks.length,
+                  itemBuilder: (context, index) {
+                    return CheckboxListTile(
+                      title: Text(pendingTasks[index].title),
+                      value: pendingTasks[index].isCompleted,
+                      onChanged: (bool? value) {
+                        toggleCheckbox(
+                          value,
+                          items.indexOf(pendingTasks[index]),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+
+            if (completedTasks.isNotEmpty) ...[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Completed',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    tooltip: 'Delete Completed Tasks',
+                    onPressed: deleteCompletedIdeas,
+                  ),
+                ],
+              ),
+              const Divider(),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: completedTasks.length,
+                  itemBuilder: (context, index) {
+                    return CheckboxListTile(
+                      title: Text(
+                        completedTasks[index].title,
+                        style: const TextStyle(
+                          color: Colors.grey, // Gray color for completed tasks
+                          decoration:
+                              TextDecoration
+                                  .lineThrough, // Strikethrough effect
+                        ),
+                      ),
+                      value: completedTasks[index].isCompleted,
+                      onChanged: (bool? value) {
+                        toggleCheckbox(
+                          value,
+                          items.indexOf(completedTasks[index]),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
           ],
         ),
       ),

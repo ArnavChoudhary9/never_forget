@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class Ideas extends StatefulWidget {
   const Ideas({super.key});
@@ -12,30 +14,68 @@ class Idea {
   bool isCompleted;
 
   Idea({required this.title, this.isCompleted = false});
+
   void toggleCompletion() {
     isCompleted = !isCompleted;
+  }
+
+  Map<String, dynamic> toJson() {
+    return {'title': title, 'isCompleted': isCompleted};
+  }
+
+  factory Idea.fromJson(Map<String, dynamic> json) {
+    return Idea(
+      title: json['title'] as String,
+      isCompleted: json['isCompleted'] as bool,
+    );
   }
 }
 
 class _IdeasState extends State<Ideas> {
-  final List<Idea> items = [];
+  List<Idea> ideas = [];
+
+  @override
+  void initState() {
+    super.initState();
+    loadIdeas();
+  }
+
+  Future<void> saveTasks() async {
+    final prefs = await SharedPreferences.getInstance();
+    final taskList = ideas.map((item) => item.toJson()).toList();
+    await prefs.setString('tasks', jsonEncode(taskList));
+  }
+
+  Future<void> loadIdeas() async {
+    final prefs = await SharedPreferences.getInstance();
+    final taskString = prefs.getString('tasks');
+    if (taskString != null) {
+      final List<dynamic> taskJson = jsonDecode(taskString);
+      setState(() {
+        ideas = taskJson.map((json) => Idea.fromJson(json)).toList();
+      });
+    }
+  }
 
   void toggleCheckbox(bool? value, int index) {
     setState(() {
-      items[index].toggleCompletion();
+      ideas[index].toggleCompletion();
     });
+    saveTasks(); 
   }
 
   void addIdea(String title) {
     setState(() {
-      items.add(Idea(title: title));
+      ideas.add(Idea(title: title));
     });
+    saveTasks(); 
   }
 
   void deleteCompletedIdeas() {
     setState(() {
-      items.removeWhere((item) => item.isCompleted);
+      ideas.removeWhere((item) => item.isCompleted);
     });
+    saveTasks(); 
   }
 
   void showAddTaskDialog() {
@@ -74,8 +114,8 @@ class _IdeasState extends State<Ideas> {
 
   @override
   Widget build(BuildContext context) {
-    final pendingTasks = items.where((item) => !item.isCompleted).toList();
-    final completedTasks = items.where((item) => item.isCompleted).toList();
+    final pendingTasks = ideas.where((idea) => !idea.isCompleted).toList();
+    final completedTasks = ideas.where((idea) => idea.isCompleted).toList();
 
     return Scaffold(
       body: Padding(
@@ -100,7 +140,7 @@ class _IdeasState extends State<Ideas> {
                       onChanged: (bool? value) {
                         toggleCheckbox(
                           value,
-                          items.indexOf(pendingTasks[index]),
+                          ideas.indexOf(pendingTasks[index]),
                         );
                       },
                     );
@@ -119,7 +159,7 @@ class _IdeasState extends State<Ideas> {
                   ),
                   IconButton(
                     icon: const Icon(Icons.delete, color: Colors.red),
-                    tooltip: 'Delete Completed Tasks',
+                    tooltip: 'Delete Completed Ideas',
                     onPressed: deleteCompletedIdeas,
                   ),
                 ],
@@ -143,7 +183,7 @@ class _IdeasState extends State<Ideas> {
                       onChanged: (bool? value) {
                         toggleCheckbox(
                           value,
-                          items.indexOf(completedTasks[index]),
+                          ideas.indexOf(completedTasks[index]),
                         );
                       },
                     );

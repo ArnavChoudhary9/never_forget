@@ -11,15 +11,19 @@ class Reminders extends StatefulWidget {
 
 class Reminder {
   String title;
+  DateTime dateTime;
 
-  Reminder({required this.title});
+  Reminder({required this.title, required this.dateTime});
 
   Map<String, dynamic> toJson() {
-    return {'title': title};
+    return {'title': title, 'dateTime': dateTime.toIso8601String()};
   }
 
   factory Reminder.fromJson(Map<String, dynamic> json) {
-    return Reminder(title: json['title'] as String);
+    return Reminder(
+      title: json['title'] as String,
+      dateTime: DateTime.parse(json['dateTime'] as String),
+    );
   }
 }
 
@@ -50,9 +54,9 @@ class _RemindersState extends State<Reminders> {
     }
   }
 
-  void addReminder(String title) {
+  void addReminder(String title, DateTime dateTime) {
     setState(() {
-      reminders.add(Reminder(title: title));
+      reminders.add(Reminder(title: title, dateTime: dateTime));
     });
     saveReminders();
   }
@@ -64,17 +68,190 @@ class _RemindersState extends State<Reminders> {
     saveReminders();
   }
 
-  void showAddTaskDialog() {
+  void showAddReminderDialog() async {
     final TextEditingController controller = TextEditingController();
+    DateTime? selectedDate;
+    TimeOfDay? selectedTime;
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Add New Reminder'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: controller,
+                    decoration: const InputDecoration(
+                      hintText: 'Enter Reminder name',
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        selectedDate == null
+                            ? "Select Date"
+                            : "${selectedDate?.day}/${selectedDate?.month}/${selectedDate?.year}",
+                      ),
+                      ElevatedButton(
+                        onPressed: () async {
+                          final pickedDate = await showDatePicker(
+                            context: context,
+                            initialDate: DateTime.now(),
+                            firstDate: DateTime.now(),
+                            lastDate: DateTime(2100),
+                          );
+                          if (pickedDate != null) {
+                            setDialogState(() {
+                              selectedDate = pickedDate;
+                            });
+                          }
+                        },
+                        child: const Text("Pick Date"),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        selectedTime == null
+                            ? "Select Time"
+                            : "${selectedTime?.hour}:${selectedTime?.minute}",
+                      ),
+                      ElevatedButton(
+                        onPressed: () async {
+                          final pickedTime = await showTimePicker(
+                            context: context,
+                            initialTime: TimeOfDay.now(),
+                          );
+                          if (pickedTime != null) {
+                            setDialogState(() {
+                              selectedTime = pickedTime;
+                            });
+                          }
+                        },
+                        child: const Text("Pick Time"),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    if (controller.text.isNotEmpty &&
+                        selectedDate != null &&
+                        selectedTime != null) {
+                      final fullDateTime = DateTime(
+                        selectedDate!.year,
+                        selectedDate!.month,
+                        selectedDate!.day,
+                        selectedTime!.hour,
+                        selectedTime!.minute,
+                      );
+                      addReminder(controller.text, fullDateTime);
+                      Navigator.of(context).pop();
+                    }
+                  },
+                  child: const Text('Add'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void showEditReminderDialog(int index) {
+    final TextEditingController titleController = TextEditingController(
+      text: reminders[index].title,
+    );
+    DateTime selectedDate =
+        reminders[index]
+            .dateTime; // Assuming reminders[index].dateTime is a DateTime object
 
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Add New Reminders'),
-          content: TextField(
-            controller: controller,
-            decoration: const InputDecoration(hintText: 'Enter Reminders name'),
+          title: const Text('Edit Reminder'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: titleController,
+                  decoration: const InputDecoration(
+                    hintText: 'Enter new title',
+                  ),
+                ),
+                const SizedBox(height: 20), // Add some space between fields
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Date: ${selectedDate.toLocal()}'.split(
+                        ' ',
+                      )[0], // Display only the date
+                    ),
+                    TextButton(
+                      onPressed: () async {
+                        DateTime? pickedDate = await showDatePicker(
+                          context: context,
+                          initialDate: selectedDate,
+                          firstDate: DateTime.now(),
+                          lastDate: DateTime(2101),
+                        );
+                        if (pickedDate != null && pickedDate != selectedDate) {
+                          selectedDate = pickedDate;
+                        }
+                      },
+                      child: const Text('Change Date'),
+                    ),
+                  ],
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Time: ${TimeOfDay.fromDateTime(selectedDate).format(context)}',
+                    ),
+                    TextButton(
+                      onPressed: () async {
+                        TimeOfDay? pickedTime = await showTimePicker(
+                          context: context,
+                          initialTime: TimeOfDay.fromDateTime(selectedDate),
+                        );
+                        if (pickedTime != null) {
+                          selectedDate = DateTime(
+                            selectedDate.year,
+                            selectedDate.month,
+                            selectedDate.day,
+                            pickedTime.hour,
+                            pickedTime.minute,
+                          );
+                        }
+                      },
+                      child: const Text('Change Time'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -85,12 +262,17 @@ class _RemindersState extends State<Reminders> {
             ),
             ElevatedButton(
               onPressed: () {
-                if (controller.text.isNotEmpty) {
-                  addReminder(controller.text);
+                if (titleController.text.isNotEmpty) {
+                  setState(() {
+                    reminders[index].title = titleController.text;
+                    reminders[index].dateTime =
+                        selectedDate; // Update the date/time
+                  });
+                  saveReminders();
                 }
                 Navigator.of(context).pop();
               },
-              child: const Text('Add'),
+              child: const Text('Save'),
             ),
           ],
         );
@@ -168,6 +350,24 @@ class _RemindersState extends State<Reminders> {
                             onLongPress: () => showOptionsMenu(context, index),
                             child: ListTile(
                               title: Text(reminders[index].title),
+                              subtitle: Text(
+                                "${reminders[index].dateTime.toLocal()}",
+                              ),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: Icon(Icons.edit),
+                                    onPressed:
+                                        () => showEditReminderDialog(index),
+                                  ),
+                                  IconButton(
+                                    icon: Icon(Icons.delete),
+                                    onPressed: () => deleteReminder(index),
+                                    color: Colors.red,
+                                  ),
+                                ],
+                              ),
                             ),
                           );
                         },
@@ -177,7 +377,7 @@ class _RemindersState extends State<Reminders> {
                 ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: showAddTaskDialog,
+        onPressed: showAddReminderDialog,
         tooltip: 'Add Task',
         child: const Icon(Icons.add),
       ),

@@ -18,12 +18,7 @@ class Idea {
 }
 
 class _IdeasState extends State<Ideas> {
-  final List<Idea> items = [
-    Idea(title: 'Item 1'),
-    Idea(title: 'Item 2'),
-    Idea(title: 'Item 3'),
-    Idea(title: 'Item 4'),
-  ];
+  final List<Idea> items = [];
 
   void toggleCheckbox(bool? value, int index) {
     setState(() {
@@ -31,11 +26,50 @@ class _IdeasState extends State<Ideas> {
     });
   }
 
+  void addIdea(String title) {
+    setState(() {
+      items.add(Idea(title: title));
+    });
+  }
+
+  void showAddTaskDialog() {
+    final TextEditingController controller = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Add New Idea'),
+          content: TextField(
+            controller: controller,
+            decoration: const InputDecoration(hintText: 'Enter idea title'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (controller.text.isNotEmpty) {
+                  addIdea(controller.text);
+                }
+                Navigator.of(context).pop();
+              },
+              child: const Text('Add'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.topLeft,
-      child: Padding(
+    return Scaffold(
+      body: Padding(
         padding: EdgeInsets.all(16.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
@@ -62,6 +96,11 @@ class _IdeasState extends State<Ideas> {
             ),
           ],
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: showAddTaskDialog,
+        tooltip: 'Add Task',
+        child: const Icon(Icons.add),
       ),
     );
   }

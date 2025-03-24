@@ -61,21 +61,21 @@ class _IdeasState extends State<Ideas> {
     setState(() {
       ideas[index].toggleCompletion();
     });
-    saveTasks(); 
+    saveTasks();
   }
 
   void addIdea(String title) {
     setState(() {
       ideas.add(Idea(title: title));
     });
-    saveTasks(); 
+    saveTasks();
   }
 
   void deleteCompletedIdeas() {
     setState(() {
       ideas.removeWhere((item) => item.isCompleted);
     });
-    saveTasks(); 
+    saveTasks();
   }
 
   void showAddTaskDialog() {
@@ -119,80 +119,89 @@ class _IdeasState extends State<Ideas> {
 
     return Scaffold(
       body: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (pendingTasks.isNotEmpty) ...[
-              const Text(
-                'To-Do',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              const Divider(),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: pendingTasks.length,
-                  itemBuilder: (context, index) {
-                    return CheckboxListTile(
-                      title: Text(pendingTasks[index].title),
-                      value: pendingTasks[index].isCompleted,
-                      onChanged: (bool? value) {
-                        toggleCheckbox(
-                          value,
-                          ideas.indexOf(pendingTasks[index]),
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-            ],
-
-            if (completedTasks.isNotEmpty) ...[
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Completed',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        padding: const EdgeInsets.all(16.0),
+        child:
+            pendingTasks.isEmpty && completedTasks.isEmpty
+                ? const Center(
+                  child: Text(
+                    "Click on '+' to add new Idea",
+                    style: TextStyle(fontSize: 18, color: Colors.grey),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.red),
-                    tooltip: 'Delete Completed Ideas',
-                    onPressed: deleteCompletedIdeas,
-                  ),
-                ],
-              ),
-              const Divider(),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: completedTasks.length,
-                  itemBuilder: (context, index) {
-                    return CheckboxListTile(
-                      title: Text(
-                        completedTasks[index].title,
-                        style: const TextStyle(
-                          color: Colors.grey, // Gray color for completed tasks
-                          decoration:
-                              TextDecoration
-                                  .lineThrough, // Strikethrough effect
+                )
+                : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (pendingTasks.isNotEmpty) ...[
+                      const Text(
+                        'To-Do',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                      value: completedTasks[index].isCompleted,
-                      onChanged: (bool? value) {
-                        toggleCheckbox(
-                          value,
-                          ideas.indexOf(completedTasks[index]),
-                        );
-                      },
-                    );
-                  },
+                      const Divider(),
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: pendingTasks.length,
+                          itemBuilder: (context, index) {
+                            return CheckboxListTile(
+                              title: Text(pendingTasks[index].title),
+                              value: pendingTasks[index].isCompleted,
+                              onChanged: (bool? value) {
+                                toggleCheckbox(
+                                  value,
+                                  ideas.indexOf(pendingTasks[index]),
+                                );
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                    if (completedTasks.isNotEmpty) ...[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Completed',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            tooltip: 'Delete Completed Ideas',
+                            onPressed: deleteCompletedIdeas,
+                          ),
+                        ],
+                      ),
+                      const Divider(),
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: completedTasks.length,
+                          itemBuilder:
+                              (context, index) => CheckboxListTile(
+                                title: Text(
+                                  completedTasks[index].title,
+                                  style: const TextStyle(
+                                    color: Colors.grey,
+                                    decoration: TextDecoration.lineThrough,
+                                  ),
+                                ),
+                                value: completedTasks[index].isCompleted,
+                                onChanged: (bool? value) {
+                                  toggleCheckbox(
+                                    value,
+                                    ideas.indexOf(completedTasks[index]),
+                                  );
+                                },
+                              ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
-              ),
-            ],
-          ],
-        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: showAddTaskDialog,
